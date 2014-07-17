@@ -25,38 +25,53 @@ import logging
 
 log = logging.getLogger('core')
 
+
 def deprecated(func):
     """This is a decorator which can be used to mark functions
     as deprecated. It will result in a warning being emitted
     when the function is used."""
     def newFunc(*args, **kwargs):
         log.warn("Call to deprecated function %s." % func.__name__,
-                      category=DeprecationWarning)
+                 category=DeprecationWarning)
         return func(*args, **kwargs)
     newFunc.__name__ = func.__name__
     newFunc.__doc__ = func.__doc__
     newFunc.__dict__.update(func.__dict__)
     return newFunc
 
+
 def dumpArgs(func):
     "This decorator dumps out the arguments passed to a function before calling it"
     argnames = func.func_code.co_varnames[:func.func_code.co_argcount]
     fname = func.func_name
-    def echoFunc(*args,**kwargs):
-        log.debug(fname+ "(" + ', '.join('%s=%r' % entry
-                                    for entry in zip(argnames,args) + kwargs.items() if entry[0] != 'self') + ')')
+
+    def echoFunc(*args, **kwargs):
+        log.debug(
+            fname +
+            "(" +
+            ', '.join(
+                '%s=%r' %
+                entry for entry in zip(
+                    argnames,
+                    args) +
+                kwargs.items() if entry[0] != 'self') +
+            ')')
         return func(*args, **kwargs)
     return echoFunc
 
+
 def requireKnownDbId(func):
     "Checks if the 1st parameter (which should be a dbId is valid (has an internal dbSpace entry)"
-    def checkFunc(*args,**kwargs):
-        if not args[0].dbSpaces.has_key(args[1]):
-            raise ImageDBException("attempt to call %s with unknown dbid %d. Have you created it first with createdb() or loaddb()?" %(func.func_name, args[1]))
+    def checkFunc(*args, **kwargs):
+        if args[1] not in args[0].dbSpaces:
+            raise ImageDBException(
+                "attempt to call %s with unknown dbid %d. Have you created it first with createdb() or loaddb()?" %
+                (func.func_name, args[1]))
         return func(*args, **kwargs)
     return checkFunc
 
-def tail( f, window=20 ):
+
+def tail(f, window=20):
     "returns last n ines from text file"
     # http://stackoverflow.com/questions/136168/get-last-n-lines-of-a-file-with-python-similar-to-tail
     BUFSIZ = 1024
@@ -68,12 +83,12 @@ def tail( f, window=20 ):
     while size > 0 and bytes > 0:
         if (bytes - BUFSIZ > 0):
             # Seek back one whole BUFSIZ
-            f.seek(block*BUFSIZ, 2)
+            f.seek(block * BUFSIZ, 2)
             # read BUFFER
             data.append(f.read(BUFSIZ))
         else:
             # file too small, start from begining
-            f.seek(0,0)
+            f.seek(0, 0)
             # only read what was not read
             data.append(f.read(bytes))
         linesFound = data[-1].count('\n')

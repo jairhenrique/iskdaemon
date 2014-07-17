@@ -29,34 +29,37 @@ parser = OptionParser()
 parser.add_option("-d", "--datadir",
                   dest="datadir",
                   help="local data dir",
-                  default=os.getcwd()+'/data/'
-                    )
+                  default=os.getcwd() + '/data/'
+                  )
 parser.add_option("-s", "--server",
                   dest="server",
                   help="server rpc endpoint url",
                   default='http://127.0.0.1:31128/RPC'
-                    )
+                  )
 
 (options, args) = parser.parse_args()
 
 server_url = options.server
 data_dir = options.datadir
 
-def start_test(x): print x
+
+def start_test(x):
+    print x
+
 
 def testAddImage():
     print server_url
     print data_dir
-    server = xmlrpclib.ServerProxy(server_url);
+    server = xmlrpclib.ServerProxy(server_url)
 
-    assert server.createDb(1) == True
+    assert server.createDb(1)
 
     start_test('add imgs')
 
-    assert server.addImg(1, 7,data_dir+"DSC00007.JPG") == 1
-    assert server.addImg(1, 6,data_dir+"DSC00006.JPG") == 1
-    assert server.addImg(1, 14,data_dir+"DSC00014.JPG") == 1
-    assert server.addImg(1, 17,data_dir+"DSC00017.JPG") == 1
+    assert server.addImg(1, 7, data_dir + "DSC00007.JPG") == 1
+    assert server.addImg(1, 6, data_dir + "DSC00006.JPG") == 1
+    assert server.addImg(1, 14, data_dir + "DSC00014.JPG") == 1
+    assert server.addImg(1, 17, data_dir + "DSC00017.JPG") == 1
 
     start_test('img count')
 
@@ -64,7 +67,7 @@ def testAddImage():
 
     start_test('image is on db')
 
-    assert server.isImgOnDb(1,7) == True
+    assert server.isImgOnDb(1, 7)
 
     start_test('save db')
 
@@ -81,16 +84,16 @@ def testAddImage():
 
     assert server.getDbImgCount(1) == 4
 
-    assert server.isImgOnDb(1,7) == 1
-    assert server.isImgOnDb(1,733) == 0
+    assert server.isImgOnDb(1, 7) == 1
+    assert server.isImgOnDb(1, 733) == 0
 
     start_test('remove img')
 
-    assert server.removeImg(1,7) == 1
-    assert server.removeImg(1,73232) == 0
+    assert server.removeImg(1, 7) == 1
+    assert server.removeImg(1, 73232) == 0
     assert server.getDbImgCount(1) == 3
-    assert server.isImgOnDb(1,7) == 0
-    assert server.getDbImgIdList(1) == [6,14,17]
+    assert server.isImgOnDb(1, 7) == 0
+    assert server.getDbImgIdList(1) == [6, 14, 17]
 
     start_test('list database spaces')
 
@@ -98,38 +101,38 @@ def testAddImage():
 
     start_test('add more random images')
 
-    fnames = [data_dir+"DSC00007.JPG",
-              data_dir+"DSC00006.JPG",
-              data_dir+"DSC00014.JPG",
-              data_dir+"DSC00017.JPG"
+    fnames = [data_dir + "DSC00007.JPG",
+              data_dir + "DSC00006.JPG",
+              data_dir + "DSC00014.JPG",
+              data_dir + "DSC00017.JPG"
               ]
 
     import random
-    for i in range(20,60):
+    for i in range(20, 60):
         assert server.addImg(1, i, random.choice(fnames)) == 1
 
     start_test('add keywords')
 
-    assert server.addKeywordImg(1,142,3) == False
-    assert server.addKeywordImg(1,14,1) == True
-    assert server.addKeywordImg(1,14,2) == True
-    assert server.addKeywordImg(1,14,3) == True
-    assert server.addKeywordImg(1,14,4) == True
-    assert server.addKeywordImg(1,17,3) == True
-    assert server.addKeywordImg(1,21,3) == True
-    assert server.addKeywordImg(1,22,5) == True
+    assert server.addKeywordImg(1, 142, 3) == False
+    assert server.addKeywordImg(1, 14, 1)
+    assert server.addKeywordImg(1, 14, 2)
+    assert server.addKeywordImg(1, 14, 3)
+    assert server.addKeywordImg(1, 14, 4)
+    assert server.addKeywordImg(1, 17, 3)
+    assert server.addKeywordImg(1, 21, 3)
+    assert server.addKeywordImg(1, 22, 5)
 
     start_test('get keywords')
 
-    assert server.getKeywordsImg(1,14) == [1,2,3,4]
-    assert server.getKeywordsImg(1,17) == [3]
-    assert server.getKeywordsImg(1,21) == [3]
-    assert server.getKeywordsImg(1,20) == []
+    assert server.getKeywordsImg(1, 14) == [1, 2, 3, 4]
+    assert server.getKeywordsImg(1, 17) == [3]
+    assert server.getKeywordsImg(1, 21) == [3]
+    assert server.getKeywordsImg(1, 20) == []
 
     start_test('remove keywords')
 
-    assert server.removeAllKeywordImg(1,17) == True
-    assert server.getKeywordsImg(1,17) == []
+    assert server.removeAllKeywordImg(1, 17)
+    assert server.getKeywordsImg(1, 17) == []
 
     start_test('save db')
 
@@ -147,14 +150,13 @@ def testAddImage():
 
     start_test('get keywords')
 
-    assert server.getKeywordsImg(1,14) == [1,2,3,4]
+    assert server.getKeywordsImg(1, 14) == [1, 2, 3, 4]
 
     start_test('query by a keyword')
 
     # 3: 14, 17, 21
     # 4: 14
     # 5: 22
-
 
     res = server.getAllImgsByKeywords(1, 30, 1, '3')
     assert 14 in res
@@ -180,12 +182,12 @@ def testAddImage():
 
     start_test('query similarity')
 
-    assert len(server.queryImgID(1,6, 3)) == 4
+    assert len(server.queryImgID(1, 6, 3)) == 4
 
     start_test('query similarity by a keyword')
 
-    #def queryImgIDKeywords(dbId, imgId, numres, kwJoinType, keywords):
-    res = server.queryImgIDKeywords(1,6, 3,0,'3,4')
+    # def queryImgIDKeywords(dbId, imgId, numres, kwJoinType, keywords):
+    res = server.queryImgIDKeywords(1, 6, 3, 0, '3,4')
     resids = [r[0] for r in res]
     assert 17 in resids
 
@@ -199,7 +201,7 @@ def testAddImage():
    #  assert server.addKeywordImg(1,51,3) == True
    #  assert server.addKeywordImg(1,52,3) == True
    #
-   # # dbId, imgs, excludedKwds, count, mode
+   # dbId, imgs, excludedKwds, count, mode
    #  res = server.mostPopularKeywords(1, '50,51,52', '1', 3, 0)
    #  resmap = {}
    #  for i in range(len(res)/2):
@@ -207,15 +209,15 @@ def testAddImage():
    #  assert 1 not in resmap.keys()
    #  assert resmap[3] == 3
 
-
-    #assertEqual(1,server.addImg(1,test_images_dir+"DSC00006.JPG",6,))
+    # assertEqual(1,server.addImg(1,test_images_dir+"DSC00006.JPG",6,))
 
 import unittest
+
 
 class APITest(unittest.TestCase):
 
     def setUp(self):
-        self.server = xmlrpclib.ServerProxy(server_url);
+        self.server = xmlrpclib.ServerProxy(server_url)
 
     def tearDown(self):
         pass
@@ -223,13 +225,13 @@ class APITest(unittest.TestCase):
     def testGetLog(self):
         logs = self.server.getIskLog(2)
         print logs
-        assert len(logs)> 10
+        assert len(logs) > 10
 
     def testAddBlob(self):
-        data = open(data_dir+"DSC00007.JPG",'rb').read()
-        assert self.server.addImgBlob(1, 7,xmlrpclib.Binary(data))
+        data = open(data_dir + "DSC00007.JPG", 'rb').read()
+        assert self.server.addImgBlob(1, 7, xmlrpclib.Binary(data))
 
-    #TODO refactor the rest of tests into here
+    # TODO refactor the rest of tests into here
 
 if __name__ == '__main__':
     testAddImage()

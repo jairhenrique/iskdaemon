@@ -25,7 +25,7 @@
 import logging
 import os
 import atexit
- 
+
 # isk-daemon imports
 from core import settings
 from core.imgdbapi import *
@@ -38,26 +38,29 @@ from imgSeekLib import daemonize
 rootLog = logging.getLogger('iskdaemon')
 ServiceFacadeInstance = None
 
-def startIskDaemon():    
+
+def startIskDaemon():
     """ cmd-line daemon entry-point
     """
 
-    # parse command line    
+    # parse command line
     from optparse import OptionParser
-        
-    parser = OptionParser(version="%prog "+iskVersion)
-    #TODO-2 add option
-    #parser.add_option("-f", "--file", dest="filename",
-    #                  help="read settings from a file other than 'settings.py'", metavar="FILE")
+
+    parser = OptionParser(version="%prog " + iskVersion)
+    # TODO-2 add option
+    # parser.add_option("-f", "--file", dest="filename",
+    # help="read settings from a file other than 'settings.py'",
+    # metavar="FILE")
     parser.add_option("-q", "--quiet",
                       action="store_false", dest="verbose", default=True,
                       help="don't print debug messages to stdout")
     (options, args) = parser.parse_args()
-   
-    #TODO-2 show which file was read
+
+    # TODO-2 show which file was read
     #rootLog.info('+- Reading settings from "%s"' % options.filename)
-    if settings.core.getboolean('daemon','startAsDaemon'): daemonize.createDaemon()
-      
+    if settings.core.getboolean('daemon', 'startAsDaemon'):
+        daemonize.createDaemon()
+
     rootLog.info('+- Starting HTTP service endpoints...')
 
     basePort = settings.core.getint('daemon', 'basePort')
@@ -69,18 +72,21 @@ def startIskDaemon():
     from twisted.internet.error import CannotListenError
 
     # Serve UI
-    import ui 
-    _ROOT = os.path.join(os.path.dirname(ui.__file__),"admin-www")
-    if not os.path.exists(_ROOT): # on Windows? Try serving from current file dir
+    import ui
+    _ROOT = os.path.join(os.path.dirname(ui.__file__), "admin-www")
+    # on Windows? Try serving from current file dir
+    if not os.path.exists(_ROOT):
         import sys
         pathname, scriptname = os.path.split(sys.argv[0])
-        _ROOT = os.path.join(pathname,'ui'+ os.sep + "admin-www")
-    rootLog.info('| serving web admin from ' + _ROOT)        
+        _ROOT = os.path.join(pathname, 'ui' + os.sep + "admin-www")
+    rootLog.info('| serving web admin from ' + _ROOT)
     root = static.File(_ROOT)
-    rootLog.info('| web admin interface listening for requests at http://localhost:%d/'% basePort)
-    
+    rootLog.info(
+        '| web admin interface listening for requests at http://localhost:%d/' %
+        basePort)
+
     atexit.register(shutdownServer)
-        
+
     # prepare remote command interfaces
     XMLRPCIskResourceInstance = XMLRPCIskResource()
     injectCommonDatabaseFacade(XMLRPCIskResourceInstance, 'xmlrpc_')
@@ -88,38 +94,53 @@ def startIskDaemon():
     if has_soap:
         SOAPIskResourceInstance = SOAPIskResource()
         injectCommonDatabaseFacade(SOAPIskResourceInstance, 'soap_')
-    
+
         # expose remote command interfaces
         root.putChild('SOAP', SOAPIskResourceInstance)
-        rootLog.info('| listening for SOAP requests at http://localhost:%d/SOAP'% basePort)
+        rootLog.info(
+            '| listening for SOAP requests at http://localhost:%d/SOAP' %
+            basePort)
     else:
-        rootLog.info('| Not listening for SOAP requests. Installing "SOAPpy" python package to enable it.')
+        rootLog.info(
+            '| Not listening for SOAP requests. Installing "SOAPpy" python package to enable it.')
 
     ServiceFacadeInstance = ServiceFacade(settings)
     injectCommonDatabaseFacade(ServiceFacadeInstance, 'remote_')
 
     # expose remote command interfaces
     root.putChild('RPC', XMLRPCIskResourceInstance)
-    rootLog.info('| listening for XML-RPC requests at http://localhost:%d/RPC'% basePort)
+    rootLog.info(
+        '| listening for XML-RPC requests at http://localhost:%d/RPC' %
+        basePort)
 
     root.putChild('export', DataExportResource())
-    rootLog.debug('| listening for data export requests at http://localhost:%d/export'% basePort)
+    rootLog.debug(
+        '| listening for data export requests at http://localhost:%d/export' %
+        basePort)
 
     # start twisted reactor
     try:
-        reactor.listenTCP(basePort, server.Site(root)) 
-        rootLog.info('| HTTP service endpoints started. Binded to all local network interfaces.')
+        reactor.listenTCP(basePort, server.Site(root))
+        rootLog.info(
+            '| HTTP service endpoints started. Binded to all local network interfaces.')
     except CannotListenError:
-        rootLog.error("Socket port %s seems to be in use, is there another instance already running ? Try supplying a different one on the command line as the first argument. Cannot start isk-daemon." % basePort)
+        rootLog.error(
+            "Socket port %s seems to be in use, is there another instance already running ? Try supplying a different one on the command line as the first argument. Cannot start isk-daemon." %
+            basePort)
         return
-        
+
     rootLog.debug('+- Starting internal service endpoint...')
-    reactor.listenTCP(basePort+100, pb.PBServerFactory(ServiceFacadeInstance)) 
-    rootLog.debug('| internal service listener started at pb://localhost:%d'% (basePort+100))
+    reactor.listenTCP(
+        basePort +
+        100,
+        pb.PBServerFactory(ServiceFacadeInstance))
+    rootLog.debug(
+        '| internal service listener started at pb://localhost:%d' %
+        (basePort + 100))
     rootLog.info('| Binded to all local network interfaces.')
-    
+
     rootLog.info('+ init finished. Waiting for requests ...')
-    reactor.run() 
+    reactor.run()
 
 if __name__ == "__main__":
     startIskDaemon()

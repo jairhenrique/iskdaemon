@@ -52,20 +52,23 @@ try:
 except ImportError:
     import pickle
 
-__author__    = "Evan Martin <martine@danga.com>"
+__author__ = "Evan Martin <martine@danga.com>"
 __version__ = "1.34"
 __copyright__ = "Copyright (C) 2003 Danga Interactive"
-__license__   = "Python"
+__license__ = "Python"
 
 SERVER_MAX_KEY_LENGTH = 250
+
 
 class _Error(Exception):
     pass
 
+
 class Client:
+
     """
     Object representing a pool of memcache servers.
-    
+
     See L{memcache} for an overview.
 
     In all cases where a key is used, the key can be either:
@@ -83,19 +86,21 @@ class Client:
     @sort: __init__, set_servers, forget_dead_hosts, disconnect_all, debuglog,\
            set, add, replace, get, get_multi, incr, decr, delete
     """
-    _FLAG_PICKLE  = 1<<0
-    _FLAG_INTEGER = 1<<1
-    _FLAG_LONG    = 1<<2
+    _FLAG_PICKLE = 1 << 0
+    _FLAG_INTEGER = 1 << 1
+    _FLAG_LONG = 1 << 2
 
     _SERVER_RETRIES = 10  # how many times to try finding a free server.
 
     # exceptions for Client
     class MemcachedKeyError(Exception):
-      pass
+        pass
+
     class MemcachedKeyLengthError(MemcachedKeyError):
-      pass
+        pass
+
     class MemcachedKeyCharacterError(MemcachedKeyError):
-      pass
+        pass
 
     def __init__(self, servers, debug=0):
         """
@@ -108,7 +113,7 @@ class Client:
         self.set_servers(servers)
         self.debug = debug
         self.stats = {}
-    
+
     def set_servers(self, servers):
         """
         Set the pool of servers used by this client.
@@ -123,7 +128,7 @@ class Client:
         self._init_buckets()
 
     def get_stats(self):
-        '''Get statistics from each of the servers.  
+        '''Get statistics from each of the servers.
 
         @return: A list of tuples ( server_identifier, stats_dictionary ).
             The dictionary contains a number of name/value pairs specifying
@@ -132,15 +137,17 @@ class Client:
         '''
         data = []
         for s in self.servers:
-            if not s.connect(): continue
-            name = '%s:%s (%s)' % ( s.ip, s.port, s.weight )
+            if not s.connect():
+                continue
+            name = '%s:%s (%s)' % (s.ip, s.port, s.weight)
             s.send_cmd('stats')
             serverData = {}
-            data.append(( name, serverData ))
+            data.append((name, serverData))
             readline = s.readline
-            while 1:
+            while True:
                 line = readline()
-                if not line or line.strip() == 'END': break
+                if not line or line.strip() == 'END':
+                    break
                 stats = line.split(' ', 2)
                 serverData[stats[1]] = stats[2]
 
@@ -149,7 +156,8 @@ class Client:
     def flush_all(self):
         'Expire all data currently in the memcache servers.'
         for s in self.servers:
-            if not s.connect(): continue
+            if not s.connect():
+                continue
             s.send_cmd('flush_all')
             s.expect("OK")
 
@@ -158,7 +166,7 @@ class Client:
             sys.stderr.write("MemCached: %s\n" % str)
 
     def _statlog(self, func):
-        if not self.stats.has_key(func):
+        if func not in self.stats:
             self.stats[func] = 1
         else:
             self.stats[func] += 1
@@ -177,7 +185,7 @@ class Client:
                 self.buckets.append(server)
 
     def _get_server(self, key):
-        if type(key) == types.TupleType:
+        if isinstance(key, types.TupleType):
             serverhash, key = key
         else:
             serverhash = hash(key)
@@ -185,7 +193,7 @@ class Client:
         for i in range(Client._SERVER_RETRIES):
             server = self.buckets[serverhash % len(self.buckets)]
             if server.connect():
-                #print "(using server %s)" % server,
+                # print "(using server %s)" % server,
                 return server, key
             serverhash = hash(str(serverhash) + str(i))
         return None, None
@@ -193,10 +201,10 @@ class Client:
     def disconnect_all(self):
         for s in self.servers:
             s.close_socket()
-    
+
     def delete(self, key, time=0):
         '''Deletes a key from the memcache.
-        
+
         @return: Nonzero on success.
         @rtype: int
         '''
@@ -205,7 +213,7 @@ class Client:
         if not server:
             return 0
         self._statlog('delete')
-        if time != None:
+        if time is not None:
             cmd = "delete %s %d" % (key, time)
         else:
             cmd = "delete %s" % key
@@ -213,7 +221,7 @@ class Client:
         try:
             server.send_cmd(cmd)
             server.expect("DELETED")
-        except socket.error, msg:
+        except socket.error as msg:
             server.mark_dead(msg[1])
             return 0
         return 1
@@ -266,30 +274,32 @@ class Client:
             server.send_cmd(cmd)
             line = server.readline()
             return int(line)
-        except socket.error, msg:
+        except socket.error as msg:
             server.mark_dead(msg[1])
             return None
 
     def add(self, key, val, time=0):
         '''
         Add new key with value.
-        
+
         Like L{set}, but only stores in memcache if the key doesn't already exist.
 
         @return: Nonzero on success.
         @rtype: int
         '''
         return self._set("add", key, val, time)
+
     def replace(self, key, val, time=0):
         '''Replace existing key with value.
-        
-        Like L{set}, but only stores in memcache if the key already exists.  
+
+        Like L{set}, but only stores in memcache if the key already exists.
         The opposite of L{add}.
 
         @return: Nonzero on success.
         @rtype: int
         '''
         return self._set("replace", key, val, time)
+
     def set(self, key, val, time=0):
         '''Unconditionally sets a key to a given value in the memcache.
 
@@ -303,7 +313,7 @@ class Client:
         @rtype: int
         '''
         return self._set("set", key, val, time)
-    
+
     def _set(self, cmd, key, val, time):
         check_key(key)
         server, key = self._get_server(key)
@@ -324,19 +334,20 @@ class Client:
         else:
             flags |= Client._FLAG_PICKLE
             val = pickle.dumps(val, 2)
-        
-        fullcmd = "%s %s %d %d %d\r\n%s" % (cmd, key, flags, time, len(val), val)
+
+        fullcmd = "%s %s %d %d %d\r\n%s" % (
+            cmd, key, flags, time, len(val), val)
         try:
             server.send_cmd(fullcmd)
             server.expect("STORED")
-        except socket.error, msg:
+        except socket.error as msg:
             server.mark_dead(msg[1])
             return 0
         return 1
 
     def get(self, key):
         '''Retrieves a key from the memcache.
-        
+
         @return: The value or None.
         '''
         check_key(key)
@@ -353,8 +364,8 @@ class Client:
                 return None
             value = self._recv_value(server, flags, rlen)
             server.expect("END")
-        except (_Error, socket.error), msg:
-            if type(msg) is types.TupleType:
+        except (_Error, socket.error) as msg:
+            if isinstance(msg, types.TupleType):
                 msg = msg[1]
             server.mark_dead(msg)
             return None
@@ -363,7 +374,7 @@ class Client:
     def get_multi(self, keys):
         '''
         Retrieves multiple keys from the memcache doing just one query.
-        
+
         >>> success = mc.set("foo", "bar")
         >>> success = mc.set("baz", 42)
         >>> mc.get_multi(["foo", "baz", "foobar"]) == {"foo": "bar", "baz": 42}
@@ -389,7 +400,7 @@ class Client:
             server, key = self._get_server(key)
             if not server:
                 continue
-            if not server_keys.has_key(server):
+            if server not in server_keys:
                 server_keys[server] = []
             server_keys[server].append(key)
 
@@ -398,7 +409,7 @@ class Client:
         for server in server_keys.keys():
             try:
                 server.send_cmd("get %s" % " ".join(server_keys[server]))
-            except socket.error, msg:
+            except socket.error as msg:
                 server.mark_dead(msg[1])
                 dead_servers.append(server)
 
@@ -417,7 +428,7 @@ class Client:
                         val = self._recv_value(server, flags, rlen)
                         retvals[rkey] = val
                     line = server.readline()
-            except (_Error, socket.error), msg:
+            except (_Error, socket.error) as msg:
                 server.mark_dead(msg)
         return retvals
 
@@ -434,10 +445,12 @@ class Client:
             return (None, None, None)
 
     def _recv_value(self, server, flags, rlen):
-        rlen += 2 # include \r\n
+        rlen += 2  # include \r\n
         buf = server.recv(rlen)
         if len(buf) != rlen:
-            raise _Error("received %d bytes when expecting %d" % (len(buf), rlen))
+            raise _Error(
+                "received %d bytes when expecting %d" %
+                (len(buf), rlen))
 
         if len(buf) == rlen:
             buf = buf[:-2]  # strip \r\n
@@ -499,7 +512,7 @@ class _Host:
         self.debuglog("MemCache: %s: %s.  Marking dead." % (self, reason))
         self.deaduntil = time.time() + _Host._DEAD_RETRY
         self.close_socket()
-        
+
     def _get_socket(self):
         if self._check_dead():
             return None
@@ -509,13 +522,13 @@ class _Host:
         # Python 2.3-ism:  s.settimeout(1)
         try:
             s.connect((self.ip, self.port))
-        except socket.error, msg:
+        except socket.error as msg:
             self.mark_dead("connect: %s" % msg[1])
             return None
         self.socket = s
         self.buffer = ''
         return s
-    
+
     def close_socket(self):
         if self.socket:
             self.socket.close()
@@ -534,11 +547,11 @@ class _Host:
             data = recv(4096)
             if not data:
                 self.mark_dead('Connection closed while reading from %s'
-                        % repr(self))
+                               % repr(self))
                 break
             buf += data
         if index >= 0:
-            self.buffer = buf[index+2:]
+            self.buffer = buf[index + 2:]
             buf = buf[:index]
         else:
             self.buffer = ''
@@ -547,9 +560,11 @@ class _Host:
     def expect(self, text):
         line = self.readline()
         if line != text:
-            self.debuglog("while expecting '%s', got unexpected response '%s'" % (text, line))
+            self.debuglog(
+                "while expecting '%s', got unexpected response '%s'" %
+                (text, line))
         return line
-    
+
     def recv(self, rlen):
         self_socket_recv = self.socket.recv
         buf = self.buffer
@@ -557,8 +572,8 @@ class _Host:
             foo = self_socket_recv(4096)
             buf += foo
             if len(foo) == 0:
-                raise _Error, ( 'Read %d bytes, expecting %d, '
-                        'read returned 0 length bytes' % ( len(buf), foo ))
+                raise _Error('Read %d bytes, expecting %d, '
+                             'read returned 0 length bytes' % (len(buf), foo))
         self.buffer = buf[rlen:]
         return buf[:rlen]
 
@@ -568,19 +583,25 @@ class _Host:
             d = " (dead until %d)" % self.deaduntil
         return "%s:%d%s" % (self.ip, self.port, d)
 
+
 def check_key(key):
     """
     Checks to make sure the key is less than SERVER_MAX_KEY_LENGTH or contains control characters.
     If test fails throws MemcachedKeyLength error.
     """
     if len(key) > SERVER_MAX_KEY_LENGTH:
-      raise Client.MemcachedKeyLengthError, "Key length is > %s" % SERVER_MAX_KEY_LENGTH
+        raise Client.MemcachedKeyLengthError(
+            "Key length is > %s" %
+            SERVER_MAX_KEY_LENGTH)
     for char in key:
-      if ord(char) < 33:
-        raise Client.MemcachedKeyCharacterError, "Control characters not allowed"
+        if ord(char) < 33:
+            raise Client.MemcachedKeyCharacterError(
+                "Control characters not allowed")
+
 
 def _doctest():
-    import doctest, memcache
+    import doctest
+    import memcache
     servers = ["127.0.0.1:11211"]
     mc = Client(servers, debug=1)
     globs = {"mc": mc}
@@ -599,6 +620,7 @@ if __name__ == "__main__":
         if not isinstance(val, types.StringTypes):
             return "%s (%s)" % (val, type(val))
         return "%s" % val
+
     def test_setget(key, val):
         print "Testing set/get {'%s': %s} ..." % (to_s(key), to_s(val)),
         mc.set(key, val)
@@ -611,18 +633,21 @@ if __name__ == "__main__":
             return 0
 
     class FooStruct:
+
         def __init__(self):
             self.bar = "baz"
+
         def __str__(self):
             return "A FooStruct"
+
         def __eq__(self, other):
             if isinstance(other, FooStruct):
                 return self.bar == other.bar
             return 0
-        
+
     test_setget("a_string", "some random string")
     test_setget("an_integer", 42)
-    if test_setget("long", long(1<<30)):
+    if test_setget("long", long(1 << 30)):
         print "Testing delete ...",
         if mc.delete("long"):
             print "OK"
@@ -650,7 +675,6 @@ if __name__ == "__main__":
         print "OK"
     else:
         print "FAIL"
-
 
 
 # vim: ts=4 sw=4 et :

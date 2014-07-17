@@ -25,33 +25,38 @@ import string
 import time
 import os
 
-def uptime ():
-    return string.atof (
-            string.split (
-                    open ('/proc/uptime', 'r').readline()
-                    )[1]
-            )
+
+def uptime():
+    return string.atof(
+        string.split(
+            open('/proc/uptime', 'r').readline()
+        )[1]
+    )
 
 
 # To iterate is human; to recurse, divine.
-def dhms(m,t):
-   if not t: return (m,)
-   return dhms(m//t[0], t[1:]) + (m % t[0],)
+def dhms(m, t):
+    if not t:
+        return (m,)
+    return dhms(m // t[0], t[1:]) + (m % t[0],)
+
 
 def human_readable(msec):
     msec = msec * 1000
-    return '%d days %d hours %d minutes %d seconds'% dhms(msec//1000, (60, 60, 24))
+    return '%d days %d hours %d minutes %d seconds' % dhms(
+        msec // 1000, (60, 60, 24))
 
 _proc_status = '/proc/%d/status' % os.getpid()
 
-_scale = {'kB': 1024.0, 'mB': 1024.0*1024.0,
-          'KB': 1024.0, 'MB': 1024.0*1024.0}
+_scale = {'kB': 1024.0, 'mB': 1024.0 * 1024.0,
+          'KB': 1024.0, 'MB': 1024.0 * 1024.0}
+
 
 def _VmB(VmKey):
     '''Private.
     '''
     global _proc_status, _scale
-     # get pseudo file  /proc/<pid>/status
+    # get pseudo file  /proc/<pid>/status
     try:
         t = open(_proc_status)
         v = t.read()
@@ -83,4 +88,3 @@ def stacksize(since=0.0):
     '''Return stack size in bytes.
     '''
     return _VmB('VmStk:') - since
-
